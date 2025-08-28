@@ -1,10 +1,11 @@
 const express = require("express")
 const Router = express.Router
-const {userModel} = require('../db.js')
+const {userModel, purchaseModel, courseModel} = require('../db.js')
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const dotenv = require("dotenv")
+const dotenv = require("dotenv");
+const { userMiddleware } = require("../middleware/user.js");
 
 const userRouter = Router()
 dotenv.config();
@@ -81,10 +82,21 @@ userRouter.post("/signin", async function(req,res) {
 })
 
 
-userRouter.get("/purchases", function(req,res) {
-        res.send({
-            message : "Signup endpoint"
-        })
+userRouter.get("/purchases", userMiddleware , async function(req,res) {
+    const userId = req.body.userId
+
+    const purchase = await purchaseModel.find({
+        userId,
+    })
+
+    const courseData = await courseModel.find({
+        _id: {$in: purchase.map(x => x.courseId)}
+    })
+
+    res.send({
+        purchase,
+        courseData
+    })
     })
 
 module.exports = {
