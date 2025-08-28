@@ -1,9 +1,10 @@
 const {Router} = require('express');
 const adminRouter = Router()
-const {adminModel} = require('../db');
+const {adminModel, courseModel} = require('../db');
 const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { adminMiddleware } = require('../middleware/admin.js');
 
 
 adminRouter.post('/signup', async function(req, res){
@@ -73,27 +74,62 @@ adminRouter.post('/signin', async function(req,res) {
         res.status(403).json({
             message : "Incorrect Email"
         })
-        console.log(e);
         return
     }
 })
 
-adminRouter.post('/course', function(req, res){
+adminRouter.post('/course', adminMiddleware , async function(req, res){
+
+    const adminId = req.userId;
+
+    const {title, description, imageUrl, price} = req.body;
+
+   const course =  await courseModel.create({
+        title: title,
+        description: description,
+        imageUrl: imageUrl,
+        price: price,
+        creatorId: adminId
+    })
+
     res.json({
-        message : "Signup Endpoint"
+        message : "Course Created",
+        courseId : course._id
     })
 })
 
-adminRouter.put('/course', function(req, res) {
+adminRouter.put('/course', adminMiddleware ,async function(req, res) {
+    const adminId = req.userId;
+
+    const {title, description, imageUrl, price, courseId} = req.body;
+
+   const course =  await courseModel.updateOne({
+    _id : courseId,
+    creatorId: adminId
+   }, {
+        title: title,
+        description: description,
+        imageUrl: imageUrl,
+        price: price,
+    })
+
     res.json({
-        message : "Signup endpoint"
+        message : "Course updated",
+        courseId : course._id
     })
 })
 
 
-adminRouter.get('/course/bulk', function(req, res) {
+adminRouter.get('/course/bulk', adminMiddleware , async function(req, res) {
+    const adminId = req.userId;
+
+   const courses =  await courseModel.find({
+    creatorId: adminId
+})
+
     res.json({
-        message : "Signup endpoint"
+        message : "Course updated",
+        courses
     })
 })
 
